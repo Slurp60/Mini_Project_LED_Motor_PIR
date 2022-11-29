@@ -1,0 +1,60 @@
+/*
+ * Lab2Experimentsl.c
+ *
+ * Created: 02/11/2022 17:39:17
+ * Author : yeah-
+ */ 
+
+#include <avr/io.h>
+#define F_CPU 16000000UL
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+void T0_Delay_2200_ms()
+{
+  TCNT1 = 0xBCDC;
+  TCCR1A = 0x00;
+  TCCR1B = 0x05;
+  while ((TIFR1 & 0x1)==0);
+  TCCR1B = 0;
+  TIFR1 = 1<<TOV1;
+}
+
+ISR(TIMER0_OVF_vect){
+
+  OCR0A = 0x00;
+}
+
+int main(void)
+{
+	//H-bridge direction control
+	DDRD |= (1 << 2) | (1 << 3);
+	DDRD |= (1 << 6);
+  DDRB = 0x02;
+  PORTB = 0x00;
+	PORTD = 0x08;
+	//OCR0A PWM, set PortD.6 output
+
+	//set OCR0A PWM, fast PWM
+	//1024 prescaler, inverted
+	TCCR0A = 0xC3;
+	TCCR0B = 0x05;
+	OCR0A = 0xFF;
+	while (1)
+  {
+    OCR0A = 0xFF;
+		T0_Delay_2200_ms();
+		if (PINB & (1 << PINB0))
+		{
+  		OCR0A = 0x33;
+  		PORTB = 0x02;
+  		T0_Delay_2200_ms(10);
+  		PORTB = 0x00;
+  		T0_Delay_2200_ms();
+  		PORTB = 0x02;
+		}
+	}
+	return 0;
+}
+
+//pin 9 = LED, pin 8 = PIR, pin 2,3,6 = H-bridge
